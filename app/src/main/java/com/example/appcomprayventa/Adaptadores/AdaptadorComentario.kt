@@ -5,7 +5,9 @@ import android.text.format.DateFormat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
+import com.example.appcomprayventa.Anuncios.DetallesAnuncio
 import com.example.appcomprayventa.Modelo.ModeloComentario
 import com.example.appcomprayventa.databinding.ItemComentarioBinding
 import com.google.firebase.database.DataSnapshot
@@ -19,11 +21,13 @@ class AdaptadorComentario(
     private val comentarioArrayList: ArrayList<ModeloComentario>
 ) : RecyclerView.Adapter<AdaptadorComentario.HolderComentario>() {
 
-    private lateinit var binding: ItemComentarioBinding
+    // private lateinit var binding: ItemComentarioBinding
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): HolderComentario {
-        binding = ItemComentarioBinding.inflate(LayoutInflater.from(context), parent, false)
-        return HolderComentario(binding.root)
+        // Inflamos el binding para cada item individualmente
+        val layoutInflater = LayoutInflater.from(parent.context)
+        val bindingItem = ItemComentarioBinding.inflate(layoutInflater, parent, false)
+        return HolderComentario(bindingItem)
     }
 
     override fun onBindViewHolder(holder: HolderComentario, position: Int) {
@@ -46,6 +50,41 @@ class AdaptadorComentario(
 
         // Cargar nombre del usuario desde Firebase (opcional si tienes tabla Usuarios)
         cargarInfoUsuario(modelo, holder)
+        cargarRespuestas(modelo.idAnuncio,modelo.id,holder)
+
+        holder.itemView.setOnClickListener {
+            // Llamamos a una función en DetallesAnuncio para responder
+            if (context is DetallesAnuncio) {
+                context.dialogResponderComentario(modelo)
+            }
+        }
+    }
+
+    private fun cargarRespuestas(idAnuncio: String, idComentarioPadre: String, holder: HolderComentario) {
+        val respuestasList = ArrayList<ModeloComentario>()
+        val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
+
+        ref.child(idAnuncio).child("Comentarios").child(idComentarioPadre).child("Respuestas")
+            .addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        respuestasList.clear()
+                        for (ds in snapshot.children) {
+                            val modelo = ds.getValue(ModeloComentario::class.java)
+                            if (modelo != null) respuestasList.add(modelo)
+                        }
+
+                        // Configurar el RecyclerView interno
+                        holder.bindingItem.RvRespuestas.visibility = View.VISIBLE
+                        holder.bindingItem.RvRespuestas.layoutManager = LinearLayoutManager(context)
+                        val adaptadorRespuestas = AdaptadorComentario(context, respuestasList)
+                        holder.bindingItem.RvRespuestas.adapter = adaptadorRespuestas
+                    } else {
+                        holder.bindingItem.RvRespuestas.visibility = View.GONE
+                    }
+                }
+                override fun onCancelled(error: DatabaseError) {}
+            })
     }
 
     private fun cargarInfoUsuario(modelo: ModeloComentario, holder: HolderComentario) {
@@ -62,9 +101,10 @@ class AdaptadorComentario(
 
     override fun getItemCount(): Int = comentarioArrayList.size
 
-    inner class HolderComentario(itemView: View) : RecyclerView.ViewHolder(itemView) {
-        val tvNombre = binding.TvNombreComentario
-        val tvTexto = binding.TvTextoComentario
-        val tvFecha = binding.TvFechaComentario
+    inner class HolderComentario(val bindingItem: ItemComentarioBinding) : RecyclerView.ViewHolder(bindingItem.root) {
+        val tvNombre = bindingItem.TvNombreComentario
+        val tvTexto = bindingItem.TvTextoComentario
+        val tvFecha = bindingItem.TvFechaComentario
+        val rvRespuestas = bindingItem.RvRespuestas // Agrega esto también para que sea más fácil de usar
     }
 }

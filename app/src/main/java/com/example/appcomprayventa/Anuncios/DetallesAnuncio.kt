@@ -210,6 +210,47 @@ class DetallesAnuncio : AppCompatActivity() {
             })
     }
 
+    fun dialogResponderComentario(modelo: ModeloComentario) {
+        val etRespuesta = android.widget.EditText(this)
+        etRespuesta.hint = "Respondiendo a ${modelo.comentario}..."
+        etRespuesta.setPadding(40, 40, 40, 40)
 
+        val builder = android.app.AlertDialog.Builder(this)
+        builder.setTitle("Responder comentario")
+            .setView(etRespuesta)
+            .setPositiveButton("Responder") { _, _ ->
+                val texto = etRespuesta.text.toString().trim()
+                if (texto.isNotEmpty()) {
+                    subirRespuesta(texto, modelo.id) // Pasamos el ID del comentario original
+                }
+            }
+            .setNegativeButton("Cancelar", null)
+            .show()
+    }
+
+    private fun subirRespuesta(respuesta: String, idComentarioPadre: String) {
+        val tiempo = System.currentTimeMillis()
+        val refAnuncios = FirebaseDatabase.getInstance().getReference("Anuncios")
+        val idRespuesta = refAnuncios.push().key!!
+
+        val info = HashMap<String, Any>()
+        info["id"] = idRespuesta
+        info["idAnuncio"] = idAnuncio
+        info["uid"] = firebaseAuth.uid!!
+        info["comentario"] = respuesta
+        info["tiempo"] = tiempo
+        info["idPadre"] = idComentarioPadre // Guardamos la referencia al padre
+
+        // Lo guardamos dentro del comentario original
+        refAnuncios.child(idAnuncio)
+            .child("Comentarios")
+            .child(idComentarioPadre)
+            .child("Respuestas")
+            .child(idRespuesta)
+            .setValue(info)
+            .addOnSuccessListener {
+                Toast.makeText(this, "Respuesta enviada", Toast.LENGTH_SHORT).show()
+            }
+    }
 
 }
