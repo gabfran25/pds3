@@ -16,5 +16,4 @@ class Usuario {
         this.imagen = imagen
     }
 
-
 }
