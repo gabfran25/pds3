@@ -40,6 +40,7 @@ class MainActivity : AppCompatActivity() {
                     true
                 }
                 R.id.Item_Mis_Anuncios->{
+                    verFragmentMisAnuncios()
                     true
                 }
                 R.id.Item_Cuenta->{
