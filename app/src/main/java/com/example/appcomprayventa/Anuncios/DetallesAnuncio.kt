@@ -3,9 +3,11 @@ package com.example.appcomprayventa.Anuncios
 import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import com.example.appcomprayventa.Adaptadores.AdaptadorComentario
 import com.example.appcomprayventa.R
 import com.example.appcomprayventa.databinding.ActivityDetallesAnuncioBinding
 import com.example.appcomprayventa.Modelo.ModeloAnuncio
+import com.example.appcomprayventa.Modelo.ModeloComentario
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.*
 
@@ -15,6 +17,9 @@ class DetallesAnuncio : AppCompatActivity() {
     private lateinit var firebaseAuth: FirebaseAuth
     private var idAnuncio = ""
     private var mialike = false
+
+    private lateinit var comentarioArrayList: ArrayList<ModeloComentario>
+    private lateinit var adaptadorComentario: AdaptadorComentario
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -30,6 +35,7 @@ class DetallesAnuncio : AppCompatActivity() {
             cargarDetallesAnuncio()
             comprobarLike() // Verifica si el usuario actual ya dio like
             contarLikes()   // Escucha cuántos likes tiene el anuncio en total
+            cargarComentarios()
         }
 
         // Configuración del botón de Like
@@ -44,6 +50,17 @@ class DetallesAnuncio : AppCompatActivity() {
                 }
             }
         }
+
+        binding.BtnComentar.setOnClickListener {
+            if (firebaseAuth.currentUser == null) {
+                Toast.makeText(this, "Inicia sesión para comentar", Toast.LENGTH_SHORT).show()
+            } else {
+                dialogComentar()
+            }
+        }
+
+
+
     }
 
     private fun cargarDetallesAnuncio() {
@@ -128,4 +145,71 @@ class DetallesAnuncio : AppCompatActivity() {
             override fun onCancelled(error: DatabaseError) {}
         })
     }
+
+    private fun dialogComentar() {
+        // Inflamos el diseño de un cuadrito de texto (puedes crear uno rápido o usar un EditText simple)
+        val builder = android.app.AlertDialog.Builder(this)
+        builder.setTitle("Agregar comentario")
+
+        val etComentario = android.widget.EditText(this)
+        etComentario.hint = "Escribe tu comentario aquí..."
+        builder.setView(etComentario)
+
+        builder.setPositiveButton("Enviar") { _, _ ->
+            val texto = etComentario.text.toString().trim()
+            if (texto.isNotEmpty()) {
+                subirComentario(texto)
+            } else {
+                Toast.makeText(this, "No puedes enviar un comentario vacío", Toast.LENGTH_SHORT).show()
+            }
+        }
+        builder.setNegativeButton("Cancelar", null)
+        builder.show()
+    }
+
+    private fun subirComentario(comentario: String) {
+        val tiempo = System.currentTimeMillis()
+        val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
+        val idComentario = "${ref.push().key}" // Generamos un ID único
+
+        val info = HashMap<String, Any>()
+        info["id"] = idComentario
+        info["idAnuncio"] = idAnuncio
+        info["uid"] = firebaseAuth.uid!!
+        info["comentario"] = comentario
+        info["tiempo"] = tiempo
+
+        ref.child(idAnuncio).child("Comentarios").child(idComentario)
+            .setValue(info)
+            .addOnSuccessListener {
+                Toast.makeText(this, "Comentario publicado", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun cargarComentarios() {
+        comentarioArrayList = ArrayList()
+
+        binding.RvComentarios.layoutManager = androidx.recyclerview.widget.LinearLayoutManager(this)
+
+        val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
+        ref.child(idAnuncio).child("Comentarios")
+            .addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    comentarioArrayList.clear()
+                    for (ds in snapshot.children) {
+                        val modelo = ds.getValue(ModeloComentario::class.java)
+                        if (modelo != null) {
+                            comentarioArrayList.add(modelo)
+                        }
+                    }
+                    // Configuramos el adaptador
+                    adaptadorComentario = AdaptadorComentario(this@DetallesAnuncio, comentarioArrayList)
+                    binding.RvComentarios.adapter = adaptadorComentario
+                }
+                override fun onCancelled(error: DatabaseError) {}
+            })
+    }
+
+
+
 }

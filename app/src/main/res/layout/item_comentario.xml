@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="10dp">
+
+    <TextView
+        android:id="@+id/Tv_Nombre_Comentario"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/UsuarioComentario"
+        android:textStyle="bold"
+        android:textColor="@color/black" />
+
+    <TextView
+        android:id="@+id/Tv_Texto_Comentario"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="@string/TextoComentario"
+        android:textColor="@color/black"
+        android:layout_marginTop="2dp" />
+
+    <TextView
+        android:id="@+id/Tv_Fecha_Comentario"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/FechaComentario"
+        android:textSize="12sp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#EEEEEE"
+        android:layout_marginTop="8dp"/>
+</LinearLayout>
