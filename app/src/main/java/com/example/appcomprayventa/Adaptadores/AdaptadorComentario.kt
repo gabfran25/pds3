@@ -5,6 +5,7 @@ import android.text.format.DateFormat
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.Toast
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.example.appcomprayventa.Anuncios.DetallesAnuncio
@@ -63,22 +64,95 @@ class AdaptadorComentario(
 
         comprobarLike(modelo,holder)
         contarLikes(modelo,holder)
+        comprobarDislike(modelo,holder)
+        contarDislikes(modelo,holder)
 
+        // Clic en Like
         holder.bindingItem.BtnLikeComento.setOnClickListener {
-            val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
-                .child(modelo.idAnuncio).child("Comentarios").child(modelo.id).child("Likes")
+            val uid = com.google.firebase.auth.FirebaseAuth.getInstance().uid
+            if (uid == null) {
+                Toast.makeText(context, "Inicia sesión", Toast.LENGTH_SHORT).show()
+            } else {
+                darLikeComentario(modelo)
+            }
+        }
 
-            ref.child(uidActual).addListenerForSingleValueEvent(object : ValueEventListener {
+        // Clic en Dislike
+        holder.bindingItem.BtnDislikeComento.setOnClickListener {
+            val uid = com.google.firebase.auth.FirebaseAuth.getInstance().uid
+            if (uid == null) {
+                Toast.makeText(context, "Inicia sesión", Toast.LENGTH_SHORT).show()
+            } else {
+                darDislikeComentario(modelo)
+            }
+        }
+
+    }
+
+    // --- NUEVAS FUNCIONES PARA LIKES/DISLIKES EN COMENTARIOS ---
+
+    private fun darLikeComentario(modelo: ModeloComentario) {
+        val uid = com.google.firebase.auth.FirebaseAuth.getInstance().uid!!
+        val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
+            .child(modelo.idAnuncio).child("Comentarios").child(modelo.id)
+
+        // Quitamos dislike si existe y ponemos like
+        ref.child("Dislikes").child(uid).removeValue()
+        ref.child("Likes").child(uid).setValue(true)
+    }
+
+    private fun darDislikeComentario(modelo: ModeloComentario) {
+        val uid = com.google.firebase.auth.FirebaseAuth.getInstance().uid!!
+        val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
+            .child(modelo.idAnuncio).child("Comentarios").child(modelo.id)
+
+        // Quitamos like si existe y ponemos dislike
+        ref.child("Likes").child(uid).removeValue()
+        ref.child("Dislikes").child(uid).setValue(true)
+    }
+
+    private fun comprobarDislike(modelo: ModeloComentario, holder: HolderComentario) {
+        val uid = com.google.firebase.auth.FirebaseAuth.getInstance().uid ?: return
+        val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
+        ref.child(modelo.idAnuncio).child("Comentarios").child(modelo.id).child("Dislikes").child(uid)
+            .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     if (snapshot.exists()) {
-                        ref.child(uidActual).removeValue() // Quitar like
+                        holder.bindingItem.BtnDislikeComento.setImageResource(R.drawable.dislike)
                     } else {
-                        ref.child(uidActual).setValue(true) // Dar like
+                        holder.bindingItem.BtnDislikeComento.setImageResource(R.drawable.antesdislike)
                     }
                 }
                 override fun onCancelled(error: DatabaseError) {}
             })
-        }
+    }
+
+    private fun contarDislikes(modelo: ModeloComentario, holder: HolderComentario) {
+        val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
+        ref.child(modelo.idAnuncio).child("Comentarios").child(modelo.id).child("Dislikes")
+            .addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    holder.bindingItem.TvDislikesComento.text = "${snapshot.childrenCount}"
+                }
+                override fun onCancelled(error: DatabaseError) {}
+            })
+    }
+
+    // Asegúrate de que tu función comprobarLike use anteslike/like correctamente:
+    private fun comprobarLike(modelo: ModeloComentario, holder: HolderComentario) {
+        val uid = com.google.firebase.auth.FirebaseAuth.getInstance().uid ?: return
+        val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
+        ref.child(modelo.idAnuncio).child("Comentarios").child(modelo.id).child("Likes").child(uid)
+            .addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        holder.bindingItem.BtnLikeComento.setImageResource(R.drawable.like)
+                    } else {
+                        holder.bindingItem.BtnLikeComento.setImageResource(R.drawable.anteslike)
+                    }
+                }
+                override fun onCancelled(error: DatabaseError) {}
+            })
     }
 
     private fun cargarRespuestas(idAnuncio: String, idComentarioPadre: String, holder: HolderComentario) {
@@ -129,21 +203,6 @@ class AdaptadorComentario(
         val rvRespuestas = bindingItem.RvRespuestas // Agrega esto también para que sea más fácil de usar
     }
 
-    private fun comprobarLike(modelo: ModeloComentario, holder: HolderComentario) {
-        val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
-        ref.child(modelo.idAnuncio).child("Comentarios").child(modelo.id).child("Likes")
-            .child(com.google.firebase.auth.FirebaseAuth.getInstance().uid!!)
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    if (snapshot.exists()) {
-                        holder.bindingItem.BtnLikeComento.setImageResource(R.drawable.like)
-                    } else {
-                        holder.bindingItem.BtnLikeComento.setImageResource(R.drawable.dislike)
-                    }
-                }
-                override fun onCancelled(error: DatabaseError) {}
-            })
-    }
 
     private fun contarLikes(modelo: ModeloComentario, holder: HolderComentario) {
         val ref = FirebaseDatabase.getInstance().getReference("Anuncios")

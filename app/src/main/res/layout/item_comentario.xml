@@ -39,7 +39,7 @@
             android:id="@+id/Btn_Like_Comento"
             android:layout_width="30dp"
             android:layout_height="30dp"
-            android:src="@drawable/dislike"
+            android:src="@drawable/anteslike"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:scaleType="fitCenter"
             android:padding="5dp"/>
@@ -57,11 +57,19 @@
             android:id="@+id/Btn_Dislike_Comento"
             android:layout_width="30dp"
             android:layout_height="30dp"
-            android:src="@drawable/dislike"
-            android:rotation="180"
+            android:src="@drawable/antesdislike"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:scaleType="fitCenter"
             android:padding="5dp"/>
+
+        <TextView
+            android:id="@+id/Tv_Dislikes_Comento"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="0"
+            android:textSize="12sp"
+            android:layout_marginStart="5dp"
+            android:layout_marginEnd="15dp"/>
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView
