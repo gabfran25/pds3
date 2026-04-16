@@ -2,7 +2,8 @@
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="@color/white">
 
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
@@ -26,7 +27,7 @@
                 android:id="@+id/Tv_Titulo_Detalle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Título"
+                android:text="Título del anuncio"
                 android:textSize="22sp"
                 android:textStyle="bold"
                 android:textColor="@color/black"
@@ -38,21 +39,29 @@
                 android:layout_height="wrap_content"
                 android:text="$0.00"
                 android:textSize="20sp"
-                android:textColor="#388E3C"
-                android:textStyle="bold"/>
+                android:textColor="#4CAF50"
+                android:textStyle="bold"
+                android:layout_marginTop="5dp"/>
 
-            <View
+            <TextView
+                android:id="@+id/TvLikesDetalle"
                 android:layout_width="match_parent"
-                android:layout_height="1dp"
-                android:background="#DDDDDD"
-                android:layout_marginVertical="10dp"/>
+                android:layout_height="wrap_content"
+                android:text="0 Likes"
+                android:textColor="@color/black"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:layout_marginTop="8dp"
+                android:layout_marginBottom="8dp"/>
 
             <TextView
                 android:id="@+id/Tv_Descripcion_Detalle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Aquí va la descripción completa del producto..."
-                android:textSize="16sp"/>
+                android:text="Descripción completa del producto..."
+                android:textSize="16sp"
+                android:textColor="@color/black"
+                android:layout_marginTop="5dp"/>
 
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
@@ -60,31 +69,34 @@
     <LinearLayout
         android:id="@+id/LinearBotones"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="60dp"
         android:layout_alignParentBottom="true"
         android:orientation="horizontal"
-        android:padding="10dp"
+        android:elevation="8dp"
         android:background="@color/white">
 
         <ImageButton
             android:id="@+id/Btn_Like"
-            android:layout_width="10dp"
-            android:layout_height="10dp"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="1"
-            android:src="@drawable/ic_like_off"
+            android:src="@drawable/like"
             android:scaleType="fitCenter"
-            android:padding="10dp"
-            android:background="?attr/selectableItemBackgroundBorderless"/>
+            android:padding="15dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Botón Like" />
 
         <ImageButton
             android:id="@+id/Btn_Comentar"
-            android:layout_width="10dp"
-            android:layout_height="10dp"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
             android:layout_weight="1"
             android:src="@drawable/ic_comentarios"
             android:scaleType="fitCenter"
-            android:padding="10dp"
-            android:background="?attr/selectableItemBackgroundBorderless"/>
+            android:padding="15dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:contentDescription="Botón Comentar" />
+
     </LinearLayout>
 
 </RelativeLayout>
