@@ -25,6 +25,15 @@ class CrearAnuncio : AppCompatActivity() {
     private lateinit var imagenSelecArrayList : ArrayList<ModeloImagenSeleccionada>
     private lateinit var adaptadorImagenSel : AdaptadorImagenSeleccionada
 
+    // ... tus otras variables (firebaseAuth, progressDialog, etc)
+    private var idAnuncio = ""
+    private var marca = ""
+    private var categoria = ""
+    private var condicion = ""
+    private var precio = ""
+    private var titulo = ""
+    private var descripcion = ""
+
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -50,6 +59,102 @@ class CrearAnuncio : AppCompatActivity() {
         // Le damos clic al ícono de la imagen grande
         binding.agregarImg.setOnClickListener {
             selec_imagen_de()
+        }
+
+        binding.BtnCrearAnuncio.setOnClickListener {
+            validarDatos()
+        }
+
+    }
+
+    private fun validarDatos() {
+        marca = binding.EtMarca.text.toString().trim()
+        categoria = binding.Categoria.text.toString().trim()
+        condicion = binding.Condicion.text.toString().trim()
+        precio = binding.EtPrecio.text.toString().trim()
+        titulo = binding.EtTitulo.text.toString().trim()
+        descripcion = binding.EtDescripcion.text.toString().trim() // Verifica que este sea el ID de tu EditText de descripción
+
+        if (titulo.isEmpty() || descripcion.isEmpty() || precio.isEmpty() || categoria.isEmpty() || condicion.isEmpty()) {
+            android.widget.Toast.makeText(this, "Por favor llena todos los campos", android.widget.Toast.LENGTH_SHORT).show()
+        } else if (imagenSelecArrayList.isEmpty()) {
+            android.widget.Toast.makeText(this, "Agrega al menos una imagen", android.widget.Toast.LENGTH_SHORT).show()
+        } else {
+            // Si todo está lleno, subimos a la base de datos
+            subirAnuncioBD()
+        }
+    }
+
+    private fun subirAnuncioBD() {
+        progressDialog.setMessage("Publicando anuncio...")
+        progressDialog.show()
+
+        val tiempo = System.currentTimeMillis()
+        idAnuncio = tiempo.toString()
+
+        // Creamos un "paquete" con toda la info
+        val hashMap = HashMap<String, Any>()
+        hashMap["id"] = idAnuncio
+        hashMap["uid"] = firebaseAuth.uid!! // Quien creó el anuncio
+        hashMap["marca"] = marca
+        hashMap["categoria"] = categoria
+        hashMap["condicion"] = condicion
+        hashMap["precio"] = precio
+        hashMap["titulo"] = titulo
+        hashMap["descripcion"] = descripcion
+        hashMap["tiempo"] = tiempo
+        // Dejamos preparados los contadores para después
+        hashMap["likes"] = 0
+        hashMap["comentarios"] = 0
+
+        // Subimos a Realtime Database
+        val ref = com.google.firebase.database.FirebaseDatabase.getInstance().getReference("Anuncios")
+        ref.child(idAnuncio).setValue(hashMap)
+            .addOnSuccessListener {
+                // Si el texto se subió bien, ahora subimos las fotos
+                subirImagenesStorage()
+            }
+            .addOnFailureListener { e ->
+                progressDialog.dismiss()
+                android.widget.Toast.makeText(this, "Error al subir: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun subirImagenesStorage() {
+        val rutaCarpeta = "Anuncios/$idAnuncio"
+        var imagenesSubidas = 0
+
+        for (i in 0 until imagenSelecArrayList.size) {
+            val modeloImagen = imagenSelecArrayList[i]
+            val nombreImagen = modeloImagen.id
+            val rutaArchivo = "$rutaCarpeta/$nombreImagen"
+
+            val reference = com.google.firebase.storage.FirebaseStorage.getInstance().getReference(rutaArchivo)
+            reference.putFile(modeloImagen.imagenUri!!)
+                .addOnSuccessListener { taskSnapshot ->
+                    // Obtenemos el link de la imagen en internet
+                    reference.downloadUrl.addOnSuccessListener { uri ->
+                        val hashMap = HashMap<String, Any>()
+                        hashMap["id"] = modeloImagen.id
+                        hashMap["imagenUrl"] = uri.toString()
+
+                        // Guardamos ese link en la base de datos, adentro del anuncio
+                        val refBd = com.google.firebase.database.FirebaseDatabase.getInstance().getReference("Anuncios")
+                        refBd.child(idAnuncio).child("Imagenes").child(modeloImagen.id).setValue(hashMap)
+
+                        imagenesSubidas++
+                        // Si ya se subieron todas las fotos de la lista
+                        if (imagenesSubidas == imagenSelecArrayList.size) {
+                            progressDialog.dismiss()
+                            android.widget.Toast.makeText(this@CrearAnuncio, "¡Anuncio publicado con éxito!", android.widget.Toast.LENGTH_SHORT).show()
+                            finish() // Cierra la pantalla de crear anuncio
+                        }
+                    }
+                }
+                .addOnFailureListener { e ->
+                    progressDialog.dismiss()
+                    android.widget.Toast.makeText(this, "Error en imagen: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                }
         }
     }
 
