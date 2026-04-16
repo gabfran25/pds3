@@ -55,13 +55,22 @@
                 android:layout_marginBottom="8dp"/>
 
             <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="DESCRIPCIÓN"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:textColor="@color/black"
+                android:layout_marginTop="15dp"/>
+
+            <TextView
                 android:id="@+id/Tv_Descripcion_Detalle"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Descripción completa del producto..."
+                android:text="Aquí va la descripción completa del producto..."
                 android:textSize="16sp"
                 android:textColor="@color/black"
-                android:layout_marginTop="5dp"/>
+                android:layout_marginTop="4dp"/>
 
             <TextView
                 android:layout_width="match_parent"
