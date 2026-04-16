@@ -73,6 +73,9 @@ class DetallesAnuncio : AppCompatActivity() {
                         binding.TvTituloDetalle.text = modelo.titulo
                         binding.TvPrecioDetalle.text = "$${modelo.precio}"
                         binding.TvDescripcionDetalle.text = modelo.descripcion
+                        binding.TvMarcaDetalle.text = "Marca: ${modelo.marca}"
+                        binding.TvCategoriaDetalle.text = "Categoría: ${modelo.categoria}"
+                        binding.TvCondicionDetalle.text = "Condición: ${modelo.condicion}"
 
                         cargarImagenesAnuncio()
                     }
