@@ -32,6 +32,8 @@ class ModeloAnuncio {
 
     var tiempo: Long = 0
     var likes: Int = 0
+
+    var dislikes: Int = 0
     var comentarios: Int = 0
 
     constructor()
@@ -39,7 +41,7 @@ class ModeloAnuncio {
     constructor(
         id: String, uid: String, marca: String, categoria: String,
         condicion: String, precio: String, titulo: String,
-        descripcion: String, tiempo: Long, likes: Int, comentarios: Int
+        descripcion: String, tiempo: Long, likes: Int, dislikes: Int, comentarios: Int
     ) {
         this.id = id
         this.uid = uid
@@ -51,6 +53,7 @@ class ModeloAnuncio {
         this.descripcion = descripcion
         this.tiempo = tiempo
         this.likes = likes
+        this.dislikes = dislikes
         this.comentarios = comentarios
     }
 }

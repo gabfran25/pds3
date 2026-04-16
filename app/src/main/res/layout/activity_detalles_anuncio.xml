@@ -52,17 +52,36 @@
                 android:textStyle="bold"
                 android:layout_marginTop="8dp"/>
 
-            <TextView
-                android:id="@+id/TvLikesDetalle"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="0 Likes"
-                android:textColor="#757575"
-                android:textSize="14sp"
-                android:layout_marginTop="8dp"
-                android:background="#F1F1F1"
-                android:paddingHorizontal="10dp"
-                android:paddingVertical="4dp"/>
+                android:orientation="horizontal"
+                android:layout_marginTop="8dp">
+
+                <TextView
+                    android:id="@+id/TvLikesDetalle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0 Likes"
+                    android:textColor="#757575"
+                    android:textSize="14sp"
+                    android:background="#F1F1F1"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="4dp"/>
+
+                <TextView
+                    android:id="@+id/TvDislikesDetalle"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="0 Dislikes"
+                    android:textColor="#757575"
+                    android:textSize="14sp"
+                    android:layout_marginStart="8dp"
+                    android:background="#F1F1F1"
+                    android:paddingHorizontal="10dp"
+                    android:paddingVertical="4dp"/>
+            </LinearLayout>
+
         </LinearLayout>
 
         <LinearLayout
@@ -187,6 +206,16 @@
             android:layout_height="match_parent"
             android:layout_weight="1"
             android:src="@drawable/like"
+            android:scaleType="fitCenter"
+            android:padding="18dp"
+            android:background="?attr/selectableItemBackgroundBorderless" />
+
+        <ImageButton
+            android:id="@+id/BtnDislike"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:src="@drawable/antesdislike"
             android:scaleType="fitCenter"
             android:padding="18dp"
             android:background="?attr/selectableItemBackgroundBorderless" />

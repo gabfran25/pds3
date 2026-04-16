@@ -19,6 +19,8 @@ class DetallesAnuncio : AppCompatActivity() {
     private var idAnuncio = ""
     private var mialike = false
 
+    private var miadislike = false
+
     private lateinit var comentarioArrayList: ArrayList<ModeloComentario>
     private lateinit var adaptadorComentario: AdaptadorComentario
 
@@ -36,6 +38,8 @@ class DetallesAnuncio : AppCompatActivity() {
             cargarDetallesAnuncio()
             comprobarLike() // Verifica si el usuario actual ya dio like
             contarLikes()   // Escucha cuántos likes tiene el anuncio en total
+            comprobarDislike()
+            contarDislikes()
             cargarComentarios()
         }
 
@@ -52,6 +56,15 @@ class DetallesAnuncio : AppCompatActivity() {
             }
         }
 
+        // Configuración botón dislike
+        binding.BtnDislike.setOnClickListener {
+            if (firebaseAuth.currentUser == null) {
+                Toast.makeText(this, "Inicia sesión", Toast.LENGTH_SHORT).show()
+            } else {
+                if (miadislike) quitarDislike() else darDislike()
+            }
+        }
+
         binding.BtnComentar.setOnClickListener {
             if (firebaseAuth.currentUser == null) {
                 Toast.makeText(this, "Inicia sesión para comentar", Toast.LENGTH_SHORT).show()
@@ -62,6 +75,39 @@ class DetallesAnuncio : AppCompatActivity() {
 
 
 
+    }
+
+    private fun darDislike() {
+        val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
+        ref.child(idAnuncio).child("Likes").child(firebaseAuth.uid!!).removeValue()
+
+        ref.child(idAnuncio).child("Dislikes").child(firebaseAuth.uid!!).setValue(true)
+            .addOnSuccessListener {
+                Toast.makeText(this, "No me gusta", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun quitarDislike() {
+        val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
+        ref.child(idAnuncio).child("Dislikes").child(firebaseAuth.uid!!).removeValue()
+    }
+
+    private fun comprobarDislike() {
+        val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
+        ref.child(idAnuncio).child("Dislikes").child(firebaseAuth.uid!!)
+            .addValueEventListener(object : ValueEventListener {
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    miadislike = snapshot.exists()
+                    if (miadislike) {
+                        // Si el usuario ya dio dislike, ponemos la imagen rellena
+                        binding.BtnDislike.setImageResource(R.drawable.dislike)
+                    } else {
+                        // Si no ha dado dislike, ponemos la imagen vacía (contorno)
+                        binding.BtnDislike.setImageResource(R.drawable.antesdislike)
+                    }
+                }
+                override fun onCancelled(error: DatabaseError) {}
+            })
     }
 
     private fun cargarDetallesAnuncio() {
@@ -137,11 +183,8 @@ class DetallesAnuncio : AppCompatActivity() {
 
     private fun darLike() {
         val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
-        ref.child(idAnuncio).child("Likes").child(firebaseAuth.uid!!)
-            .setValue(true)
-            .addOnFailureListener { e ->
-                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
-            }
+        ref.child(idAnuncio).child("Dislikes").child(firebaseAuth.uid!!).removeValue()
+        ref.child(idAnuncio).child("Likes").child(firebaseAuth.uid!!).setValue(true)
     }
 
     private fun quitarLike() {
@@ -160,6 +203,19 @@ class DetallesAnuncio : AppCompatActivity() {
             override fun onCancelled(error: DatabaseError) {}
         })
     }
+
+    private fun contarDislikes() {
+        val ref = FirebaseDatabase.getInstance().getReference("Anuncios").child(idAnuncio).child("Dislikes")
+        ref.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                val numeroDislikes = snapshot.childrenCount
+                binding.TvDislikesDetalle.text = "$numeroDislikes Dislikes"
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        })
+    }
+
+
 
     private fun dialogComentar() {
         // Inflamos el diseño de un cuadrito de texto (puedes crear uno rápido o usar un EditText simple)
