@@ -4,6 +4,7 @@ import android.os.Bundle
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
 import com.example.appcomprayventa.Adaptadores.AdaptadorComentario
+import com.example.appcomprayventa.Adaptadores.AdaptadorImagenSlider
 import com.example.appcomprayventa.R
 import com.example.appcomprayventa.databinding.ActivityDetallesAnuncioBinding
 import com.example.appcomprayventa.Modelo.ModeloAnuncio
@@ -85,24 +86,35 @@ class DetallesAnuncio : AppCompatActivity() {
     }
 
     private fun cargarImagenesAnuncio() {
+        val listaImagenes = ArrayList<String>()
         val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
-        ref.child(idAnuncio).child("Imagenes").limitToFirst(1)
+
+        // Accedemos al nodo: Anuncios -> idAnuncio -> Imagenes
+        ref.child(idAnuncio).child("Imagenes")
             .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
+                    listaImagenes.clear()
                     for (ds in snapshot.children) {
-                        val imagenUrl = "${ds.child("imagenUrl").value}"
-                        try {
-                            com.bumptech.glide.Glide.with(this@DetallesAnuncio)
-                                .load(imagenUrl)
-                                .placeholder(R.drawable.item_imagen)
-                                .into(binding.ImgDetalle)
-                        } catch (e: Exception) { }
+                        // CLAVE: Tu captura muestra que el campo se llama "imagenUrl"
+                        val url = "${ds.child("imagenUrl").value}"
+
+                        if (url != "null") {
+                            listaImagenes.add(url)
+                        }
+                    }
+
+                    // Solo configuramos si encontramos imágenes
+                    if (listaImagenes.isNotEmpty()) {
+                        val adaptadorSlider = AdaptadorImagenSlider(this@DetallesAnuncio, listaImagenes)
+                        binding.ViewPagerImagenes.adapter = adaptadorSlider
                     }
                 }
-                override fun onCancelled(error: DatabaseError) {}
+
+                override fun onCancelled(error: DatabaseError) {
+                    // Opcional: manejar error de lectura
+                }
             })
     }
-
     // --- SECCIÓN DE LIKES ---
 
     private fun comprobarLike() {
@@ -116,7 +128,7 @@ class DetallesAnuncio : AppCompatActivity() {
                         binding.BtnLike.setImageResource(R.drawable.like)
                     } else {
                         // Si no existe, la de "dislike" (vacío)
-                        binding.BtnLike.setImageResource(R.drawable.dislike)
+                        binding.BtnLike.setImageResource(R.drawable.anteslike)
                     }
                 }
                 override fun onCancelled(error: DatabaseError) {}
