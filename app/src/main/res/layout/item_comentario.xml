@@ -70,6 +70,17 @@
             android:textSize="12sp"
             android:layout_marginStart="5dp"
             android:layout_marginEnd="15dp"/>
+
+        <ImageButton
+            android:id="@+id/Btn_Responder_Comento"
+            android:layout_width="30dp"
+            android:layout_height="30dp"
+            android:src="@drawable/respondercomentario"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:scaleType="fitCenter"
+            android:padding="5dp"
+            android:layout_marginStart="10dp"/>
+
     </LinearLayout>
 
     <androidx.recyclerview.widget.RecyclerView

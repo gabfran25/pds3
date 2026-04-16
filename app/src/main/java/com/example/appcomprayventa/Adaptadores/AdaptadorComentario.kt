@@ -12,10 +12,8 @@ import com.example.appcomprayventa.Anuncios.DetallesAnuncio
 import com.example.appcomprayventa.Modelo.ModeloComentario
 import com.example.appcomprayventa.R
 import com.example.appcomprayventa.databinding.ItemComentarioBinding
-import com.google.firebase.database.DataSnapshot
-import com.google.firebase.database.DatabaseError
-import com.google.firebase.database.FirebaseDatabase
-import com.google.firebase.database.ValueEventListener
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.database.*
 import java.util.*
 
 class AdaptadorComentario(
@@ -23,113 +21,139 @@ class AdaptadorComentario(
     private val comentarioArrayList: ArrayList<ModeloComentario>
 ) : RecyclerView.Adapter<AdaptadorComentario.HolderComentario>() {
 
-    // private lateinit var binding: ItemComentarioBinding
-
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): HolderComentario {
-        // Inflamos el binding para cada item individualmente
-        val layoutInflater = LayoutInflater.from(parent.context)
-        val bindingItem = ItemComentarioBinding.inflate(layoutInflater, parent, false)
+        val bindingItem = ItemComentarioBinding.inflate(LayoutInflater.from(context), parent, false)
         return HolderComentario(bindingItem)
     }
 
     override fun onBindViewHolder(holder: HolderComentario, position: Int) {
         val modelo = comentarioArrayList[position]
-        val uidActual = com.google.firebase.auth.FirebaseAuth.getInstance().uid!!
+        val uidActual = FirebaseAuth.getInstance().uid
 
-        val idAnuncio = modelo.idAnuncio
-        val idComentario = modelo.id
-        val uid = modelo.uid
-        val comentario = modelo.comentario
-        val tiempo = modelo.tiempo
+        // Setear datos básicos del comentario
+        holder.bindingItem.TvTextoComentario.text = modelo.comentario
 
-        // Formatear fecha
         val calendar = Calendar.getInstance(Locale.getDefault())
-        calendar.timeInMillis = tiempo
-        val fecha = DateFormat.format("dd/MM/yyyy", calendar).toString()
+        calendar.timeInMillis = modelo.tiempo
+        holder.bindingItem.TvFechaComentario.text = DateFormat.format("dd/MM/yyyy", calendar).toString()
 
-        // Setear datos
-        holder.tvTexto.text = comentario
-        holder.tvFecha.text = fecha
-
-        // Cargar nombre del usuario desde Firebase (opcional si tienes tabla Usuarios)
         cargarInfoUsuario(modelo, holder)
-        cargarRespuestas(modelo.idAnuncio,modelo.id,holder)
 
-        holder.itemView.setOnClickListener {
-            // Llamamos a una función en DetallesAnuncio para responder
+        // Solo cargamos respuestas si el comentario NO es ya una respuesta (para evitar bucles infinitos)
+        if (modelo.idPadre.isEmpty()) {
+            cargarRespuestas(modelo.idAnuncio, modelo.id, holder)
+        } else {
+            holder.bindingItem.RvRespuestas.visibility = View.GONE
+        }
+
+        // --- SISTEMA DE VOTOS ---
+        comprobarLike(modelo, holder)
+        contarLikes(modelo, holder)
+        comprobarDislike(modelo, holder)
+        contarDislikes(modelo, holder)
+
+        // Botón Like
+        holder.bindingItem.BtnLikeComento.setOnClickListener {
+            if (uidActual == null) {
+                Toast.makeText(context, "Inicia sesión", Toast.LENGTH_SHORT).show()
+            } else {
+                gestionarVoto(modelo, isLike = true)
+            }
+        }
+
+        // Botón Dislike
+        holder.bindingItem.BtnDislikeComento.setOnClickListener {
+            if (uidActual == null) {
+                Toast.makeText(context, "Inicia sesión", Toast.LENGTH_SHORT).show()
+            } else {
+                gestionarVoto(modelo, isLike = false)
+            }
+        }
+
+        // Botón Responder
+        holder.bindingItem.BtnResponderComento.setOnClickListener {
             if (context is DetallesAnuncio) {
                 context.dialogResponderComentario(modelo)
             }
         }
-
-        comprobarLike(modelo,holder)
-        contarLikes(modelo,holder)
-        comprobarDislike(modelo,holder)
-        contarDislikes(modelo,holder)
-
-        // Clic en Like
-        holder.bindingItem.BtnLikeComento.setOnClickListener {
-            val uid = com.google.firebase.auth.FirebaseAuth.getInstance().uid
-            if (uid == null) {
-                Toast.makeText(context, "Inicia sesión", Toast.LENGTH_SHORT).show()
-            } else {
-                darLikeComentario(modelo)
-            }
-        }
-
-        // Clic en Dislike
-        holder.bindingItem.BtnDislikeComento.setOnClickListener {
-            val uid = com.google.firebase.auth.FirebaseAuth.getInstance().uid
-            if (uid == null) {
-                Toast.makeText(context, "Inicia sesión", Toast.LENGTH_SHORT).show()
-            } else {
-                darDislikeComentario(modelo)
-            }
-        }
-
     }
 
-    // --- NUEVAS FUNCIONES PARA LIKES/DISLIKES EN COMENTARIOS ---
+    // Función unificada para gestionar Like y Dislike sin errores de nulidad
+    private fun gestionarVoto(modelo: ModeloComentario, isLike: Boolean) {
+        val uid = FirebaseAuth.getInstance().uid ?: return
 
-    private fun darLikeComentario(modelo: ModeloComentario) {
-        val uid = com.google.firebase.auth.FirebaseAuth.getInstance().uid!!
-        val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
-            .child(modelo.idAnuncio).child("Comentarios").child(modelo.id)
+        // IMPORTANTE: Construimos la ruta dependiendo de si es comentario raíz o respuesta
+        val ref = if (modelo.idPadre.isEmpty()) {
+            FirebaseDatabase.getInstance().getReference("Anuncios")
+                .child(modelo.idAnuncio).child("Comentarios").child(modelo.id)
+        } else {
+            FirebaseDatabase.getInstance().getReference("Anuncios")
+                .child(modelo.idAnuncio).child("Comentarios").child(modelo.idPadre)
+                .child("Respuestas").child(modelo.id)
+        }
 
-        // Quitamos dislike si existe y ponemos like
-        ref.child("Dislikes").child(uid).removeValue()
-        ref.child("Likes").child(uid).setValue(true)
+        val nodoPrincipal = if (isLike) "Likes" else "Dislikes"
+        val nodoOpuesto = if (isLike) "Dislikes" else "Likes"
+
+        ref.child(nodoPrincipal).child(uid).addListenerForSingleValueEvent(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    // Si ya existe el voto, lo quitamos (Toggle off)
+                    ref.child(nodoPrincipal).child(uid).removeValue()
+                } else {
+                    // Si no existe, quitamos el opuesto y ponemos el nuevo (Toggle on)
+                    ref.child(nodoOpuesto).child(uid).removeValue()
+                    ref.child(nodoPrincipal).child(uid).setValue(true)
+                }
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        })
     }
 
-    private fun darDislikeComentario(modelo: ModeloComentario) {
-        val uid = com.google.firebase.auth.FirebaseAuth.getInstance().uid!!
-        val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
-            .child(modelo.idAnuncio).child("Comentarios").child(modelo.id)
+    private fun comprobarLike(modelo: ModeloComentario, holder: HolderComentario) {
+        val uid = FirebaseAuth.getInstance().uid ?: return
+        val ref = obtenerReferenciaVotos(modelo).child("Likes").child(uid)
 
-        // Quitamos like si existe y ponemos dislike
-        ref.child("Likes").child(uid).removeValue()
-        ref.child("Dislikes").child(uid).setValue(true)
+        ref.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    holder.bindingItem.BtnLikeComento.setImageResource(R.drawable.like)
+                } else {
+                    holder.bindingItem.BtnLikeComento.setImageResource(R.drawable.anteslike)
+                }
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        })
     }
 
     private fun comprobarDislike(modelo: ModeloComentario, holder: HolderComentario) {
-        val uid = com.google.firebase.auth.FirebaseAuth.getInstance().uid ?: return
-        val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
-        ref.child(modelo.idAnuncio).child("Comentarios").child(modelo.id).child("Dislikes").child(uid)
+        val uid = FirebaseAuth.getInstance().uid ?: return
+        val ref = obtenerReferenciaVotos(modelo).child("Dislikes").child(uid)
+
+        ref.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    holder.bindingItem.BtnDislikeComento.setImageResource(R.drawable.dislike)
+                } else {
+                    holder.bindingItem.BtnDislikeComento.setImageResource(R.drawable.antesdislike)
+                }
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        })
+    }
+
+    private fun contarLikes(modelo: ModeloComentario, holder: HolderComentario) {
+        obtenerReferenciaVotos(modelo).child("Likes")
             .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
-                    if (snapshot.exists()) {
-                        holder.bindingItem.BtnDislikeComento.setImageResource(R.drawable.dislike)
-                    } else {
-                        holder.bindingItem.BtnDislikeComento.setImageResource(R.drawable.antesdislike)
-                    }
+                    holder.bindingItem.TvLikesComento.text = "${snapshot.childrenCount}"
                 }
                 override fun onCancelled(error: DatabaseError) {}
             })
     }
 
     private fun contarDislikes(modelo: ModeloComentario, holder: HolderComentario) {
-        val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
-        ref.child(modelo.idAnuncio).child("Comentarios").child(modelo.id).child("Dislikes")
+        obtenerReferenciaVotos(modelo).child("Dislikes")
             .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
                     holder.bindingItem.TvDislikesComento.text = "${snapshot.childrenCount}"
@@ -138,81 +162,53 @@ class AdaptadorComentario(
             })
     }
 
-    // Asegúrate de que tu función comprobarLike use anteslike/like correctamente:
-    private fun comprobarLike(modelo: ModeloComentario, holder: HolderComentario) {
-        val uid = com.google.firebase.auth.FirebaseAuth.getInstance().uid ?: return
-        val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
-        ref.child(modelo.idAnuncio).child("Comentarios").child(modelo.id).child("Likes").child(uid)
+    // Función auxiliar para no repetir código de rutas de Firebase
+    private fun obtenerReferenciaVotos(modelo: ModeloComentario): DatabaseReference {
+        return if (modelo.idPadre.isEmpty()) {
+            FirebaseDatabase.getInstance().getReference("Anuncios")
+                .child(modelo.idAnuncio).child("Comentarios").child(modelo.id)
+        } else {
+            FirebaseDatabase.getInstance().getReference("Anuncios")
+                .child(modelo.idAnuncio).child("Comentarios").child(modelo.idPadre)
+                .child("Respuestas").child(modelo.id)
+        }
+    }
+
+    private fun cargarInfoUsuario(modelo: ModeloComentario, holder: HolderComentario) {
+        FirebaseDatabase.getInstance().getReference("Usuarios").child(modelo.uid)
             .addValueEventListener(object : ValueEventListener {
                 override fun onDataChange(snapshot: DataSnapshot) {
-                    if (snapshot.exists()) {
-                        holder.bindingItem.BtnLikeComento.setImageResource(R.drawable.like)
-                    } else {
-                        holder.bindingItem.BtnLikeComento.setImageResource(R.drawable.anteslike)
-                    }
+                    val nombre = snapshot.child("nombres").value?.toString() ?: "Usuario"
+                    holder.bindingItem.TvNombreComentario.text = nombre
                 }
                 override fun onCancelled(error: DatabaseError) {}
             })
     }
 
     private fun cargarRespuestas(idAnuncio: String, idComentarioPadre: String, holder: HolderComentario) {
-        val respuestasList = ArrayList<ModeloComentario>()
         val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
+            .child(idAnuncio).child("Comentarios").child(idComentarioPadre).child("Respuestas")
 
-        ref.child(idAnuncio).child("Comentarios").child(idComentarioPadre).child("Respuestas")
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    if (snapshot.exists()) {
-                        respuestasList.clear()
-                        for (ds in snapshot.children) {
-                            val modelo = ds.getValue(ModeloComentario::class.java)
-                            if (modelo != null) respuestasList.add(modelo)
-                        }
-
-                        // Configurar el RecyclerView interno
-                        holder.bindingItem.RvRespuestas.visibility = View.VISIBLE
-                        holder.bindingItem.RvRespuestas.layoutManager = LinearLayoutManager(context)
-                        val adaptadorRespuestas = AdaptadorComentario(context, respuestasList)
-                        holder.bindingItem.RvRespuestas.adapter = adaptadorRespuestas
-                    } else {
-                        holder.bindingItem.RvRespuestas.visibility = View.GONE
+        ref.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                if (snapshot.exists()) {
+                    val respuestasList = ArrayList<ModeloComentario>()
+                    for (ds in snapshot.children) {
+                        val mod = ds.getValue(ModeloComentario::class.java)
+                        if (mod != null) respuestasList.add(mod)
                     }
+                    holder.bindingItem.RvRespuestas.visibility = View.VISIBLE
+                    holder.bindingItem.RvRespuestas.layoutManager = LinearLayoutManager(context)
+                    holder.bindingItem.RvRespuestas.adapter = AdaptadorComentario(context, respuestasList)
+                } else {
+                    holder.bindingItem.RvRespuestas.visibility = View.GONE
                 }
-                override fun onCancelled(error: DatabaseError) {}
-            })
-    }
-
-    private fun cargarInfoUsuario(modelo: ModeloComentario, holder: HolderComentario) {
-        val ref = FirebaseDatabase.getInstance().getReference("Usuarios")
-        ref.child(modelo.uid)
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val nombre = "${snapshot.child("nombres").value}"
-                    holder.tvNombre.text = nombre
-                }
-                override fun onCancelled(error: DatabaseError) {}
-            })
+            }
+            override fun onCancelled(error: DatabaseError) {}
+        })
     }
 
     override fun getItemCount(): Int = comentarioArrayList.size
 
-    inner class HolderComentario(val bindingItem: ItemComentarioBinding) : RecyclerView.ViewHolder(bindingItem.root) {
-        val tvNombre = bindingItem.TvNombreComentario
-        val tvTexto = bindingItem.TvTextoComentario
-        val tvFecha = bindingItem.TvFechaComentario
-        val rvRespuestas = bindingItem.RvRespuestas // Agrega esto también para que sea más fácil de usar
-    }
-
-
-    private fun contarLikes(modelo: ModeloComentario, holder: HolderComentario) {
-        val ref = FirebaseDatabase.getInstance().getReference("Anuncios")
-        ref.child(modelo.idAnuncio).child("Comentarios").child(modelo.id).child("Likes")
-            .addValueEventListener(object : ValueEventListener {
-                override fun onDataChange(snapshot: DataSnapshot) {
-                    val numeroLikes = snapshot.childrenCount
-                    holder.bindingItem.TvLikesComento.text = "$numeroLikes"
-                }
-                override fun onCancelled(error: DatabaseError) {}
-            })
-    }
+    inner class HolderComentario(val bindingItem: ItemComentarioBinding) : RecyclerView.ViewHolder(bindingItem.root)
 }
