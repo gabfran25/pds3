@@ -34,9 +34,11 @@ class MainActivity : AppCompatActivity() {
         binding.BottomNV.setOnItemSelectedListener { item ->
             when(item.itemId){
                 R.id.Item_Inicio->{
+                    verFragmentInicio()
                     true
                 }
                 R.id.Item_Chats->{
+                    verFragmentChats()
                     true
                 }
                 R.id.Item_Mis_Anuncios->{

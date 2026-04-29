@@ -12,6 +12,7 @@ import android.content.Context
 import android.util.Log
 import android.view.View
 import android.widget.Toast
+import androidx.core.widget.doOnTextChanged
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.database.DataSnapshot
@@ -39,6 +40,10 @@ class FragmentChats : Fragment() {
         binding.RVUsuarios.layoutManager = LinearLayoutManager(mContext)
 
         usuarioLista = ArrayList()
+
+        binding.EtBuscarUsuario.doOnTextChanged { usuario, start, before, count ->
+            buscarUsuario(usuario.toString())
+        }
 
         listarUsuarios()
 
@@ -83,6 +88,43 @@ class FragmentChats : Fragment() {
                 Log.e("FirebaseError", "Error al leer usuarios: ${error.message}")
                 Toast.makeText(mContext,
                     "Error al cargar datos: ${error.message}",
+                    Toast.LENGTH_SHORT
+                ).show()
+            }
+        })
+    }
+
+    private fun buscarUsuario(usuario : String) {
+        // Obtenemos el uid del usuario actual y gestionamos la búsqueda a través del nombre
+        val firebaseUser = FirebaseAuth.getInstance().currentUser!!.uid
+        val reference = FirebaseDatabase.getInstance().reference
+            .child("Usuarios")
+            .orderByChild("nombres")
+            .startAt(usuario)
+            .endAt(usuario + "\uf8ff")
+
+        reference.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                (usuarioLista as ArrayList<Usuario>).clear()
+
+                for (ss in snapshot.children) {
+                    val usuario : Usuario ?= ss.getValue(Usuario::class.java)
+
+                    // Filtramos para no buscarnos a nosotros mismos
+                    if (!(usuario!!.uid).equals(firebaseUser)) {
+                        (usuarioLista as ArrayList<Usuario>).add(usuario)
+                    }
+                }
+
+                // Actualizamos el adaptador
+                usuarioAdaptador = AdaptadorUsuario(context!!,usuarioLista!!)
+                binding.RVUsuarios.adapter = usuarioAdaptador
+            }
+
+            override fun onCancelled(error: DatabaseError) {
+                Log.e("FirebaseError", "Error al buscar a los usuarios: ${error.message}")
+                Toast.makeText(mContext,
+                    "Error al buscar: ${error.message}",
                     Toast.LENGTH_SHORT
                 ).show()
             }

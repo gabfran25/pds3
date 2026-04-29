@@ -67,6 +67,7 @@
     <string name="item_nombre">Nombre</string>
     <string name="item_email">Email</string>
     <string name="tv_sin_Usuario">No hay más usuarios.</string>
+    <string name="Et_buscar_usuario">Buscar usuario</string>
 
     <!-- Mis Anuncios -->
     <string name="tituloAnuncio">Título del Anuncio</string>
