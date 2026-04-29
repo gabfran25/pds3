@@ -49,6 +49,7 @@ class AdaptadorUsuario(context: Context, listaUsuario: List<Usuario>): RecyclerV
             Toast.makeText(context,
                 "Has seleccionado al usuario: ${holder.nombres.text}",
                 Toast.LENGTH_SHORT).show()
+            context.startActivity(intent)
         }
     }
 
