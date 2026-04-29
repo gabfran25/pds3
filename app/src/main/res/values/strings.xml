@@ -66,6 +66,8 @@
     <string name="item_uid">Uid</string>
     <string name="item_nombre">Nombre</string>
     <string name="item_email">Email</string>
+
+    <!-- Buscar usuario-->
     <string name="tv_sin_Usuario">No hay más usuarios.</string>
     <string name="Et_buscar_usuario">Buscar usuario</string>
 
@@ -78,6 +80,11 @@
     <string name="UsuarioComentario">Usuario</string>
     <string name="TextoComentario">Este es un comentario de prueba.</string>
     <string name="FechaComentario">00/00/0000</string>
+
+    <!--Chat-->
+    <string name="Txt_nombre_usuario">Nombres</string>
+    <string name="Et_mensaje_chat">Escriba algo...</string>
+    <string name="Tv_tiempo_mensaje">dd/MM/yyyy hh:mm</string>
 
     <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
