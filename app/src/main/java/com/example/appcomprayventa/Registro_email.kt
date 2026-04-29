@@ -37,10 +37,12 @@ class Registro_email : AppCompatActivity() {
         }
     }
 
+    private var nombres = ""
     private var email = ""
     private var password = ""
     private var r_password = ""
     private fun validarInfo() {
+        nombres = binding.EtNombres.text.toString().trim()
         email = binding.EtEmail.text.toString().trim()
         password = binding.EtPassword.text.toString().trim()
         r_password = binding.EtRPassword.text.toString().trim()
@@ -48,6 +50,9 @@ class Registro_email : AppCompatActivity() {
         if(!Patterns.EMAIL_ADDRESS.matcher(email).matches()){
             binding.EtEmail.error = "Email inválido."
             binding.EtEmail.requestFocus()
+        } else if (nombres.isEmpty()) {
+            binding.EtNombres.error = "Ingrese un nombre."
+            binding.EtNombres.requestFocus()
         }
         else if (email.isEmpty()){
             binding.EtEmail.error = "Ingrese un email."
@@ -94,7 +99,7 @@ class Registro_email : AppCompatActivity() {
         val uidUsuario = firebaseAuth.uid
 
         val hashMap = HashMap<String, Any>()
-        hashMap["nombres"] = ""
+        hashMap["nombres"] = this.nombres
         hashMap["codigoTelefono"] = ""
         hashMap["telefono"] = ""
         hashMap["urlImagenPerfil"] = ""

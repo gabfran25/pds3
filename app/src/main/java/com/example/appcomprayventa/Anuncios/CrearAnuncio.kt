@@ -1,9 +1,13 @@
 package com.example.appcomprayventa.Anuncios
 
+import android.Manifest
 import android.app.ProgressDialog
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.view.Menu
 import android.widget.ArrayAdapter
+import android.widget.PopupMenu
 import androidx.activity.enableEdgeToEdge
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.ViewCompat
@@ -159,32 +163,26 @@ class CrearAnuncio : AppCompatActivity() {
     }
 
     private fun selec_imagen_de() {
-        // OJO: Aquí cambiamos FABCambiarImg por agregarImg que es el ID de tu pantalla de anuncio
-        val popupMenu = android.widget.PopupMenu(this, binding.agregarImg)
-
-        popupMenu.menu.add(android.view.Menu.NONE, 1, 1, "Cámara")
-        popupMenu.menu.add(android.view.Menu.NONE, 2, 2, "Galería")
-
+        val popupMenu = PopupMenu(this, binding.agregarImg)
+        popupMenu.menu.add(Menu.NONE, 1, 1, "Cámara")
+        popupMenu.menu.add(Menu.NONE, 2, 2, "Galería")
         popupMenu.show()
 
         popupMenu.setOnMenuItemClickListener { item ->
             val itemId = item.itemId
             if (itemId == 1) {
-                // camara
-                if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU){
-                    concederPermisosCamara.launch(arrayOf(android.Manifest.permission.CAMERA))
+                // Lógica cámara
+                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
+                    concederPermisosCamara.launch(arrayOf(Manifest.permission.CAMERA))
                 } else {
-                    concederPermisosCamara.launch(arrayOf(
-                        android.Manifest.permission.CAMERA,
-                        android.Manifest.permission.WRITE_EXTERNAL_STORAGE))
+                    concederPermisosCamara.launch(arrayOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE))
                 }
             } else if (itemId == 2) {
-                // galería
-                if(android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.TIRAMISU){
-                    imagenGaleria()
+                // Lógica galería CORREGIDA para Android 13+
+                if(Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU){
+                    concederPermisosAlmacenamiento.launch(Manifest.permission.READ_MEDIA_IMAGES)
                 } else {
-                    concederPermisosAlmacenamiento.launch(
-                        android.Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    concederPermisosAlmacenamiento.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
                 }
             }
             return@setOnMenuItemClickListener true

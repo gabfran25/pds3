@@ -10,6 +10,7 @@
     <string name="Ingresar_google">Ingresar con google</string>
 
     <string name="Txt_login">Login de usuario</string>
+    <string name="Et_nombresRegistro">Nombres</string>
     <string name="Et_email">Email</string>
     <string name="Et_password">Password</string>
     <string name="Btn_ingresar">Ingresar</string>
