@@ -55,6 +55,7 @@ dependencies {
     implementation(libs.glide)
     implementation(libs.firebaseStorage)
     implementation(libs.ccp)
+    implementation(libs.photoView)
     testImplementation(libs.junit)
     implementation(platform("com.google.firebase:firebase-bom:34.7.0")) /*tal vez borrar*/
     androidTestImplementation(libs.androidx.junit)
