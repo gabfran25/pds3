@@ -41,6 +41,19 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"/>
 
+        <ImageButton
+            android:id="@+id/IbMasOpciones"
+            android:layout_width="48dp"
+            android:layout_height="48dp"
+            android:layout_alignParentEnd = "true"
+            android:layout_centerVertical = "true"
+            android:layout_marginEnd = "8dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:padding="12dp"
+            android:src="@drawable/ic_more"
+            app:tint="#3F3D56"
+            />
+
         <View
             android:background="#ccc"
             android:layout_alignParentBottom="true"

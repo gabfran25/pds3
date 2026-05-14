@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Build
 import android.os.Bundle
 import android.util.Log
+import android.widget.PopupMenu
 import android.widget.Toast
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
@@ -39,9 +40,13 @@ class ChatActivity : AppCompatActivity() {
     private lateinit var progressDialog: ProgressDialog
 
     private var miUid = ""
-
     private var chatRuta = ""
     private var imagenUri : Uri? = null
+
+    private var yoBloqueado = false
+    private lateinit var referenceVisto : com.google.firebase.database.DatabaseReference
+
+    private var vistoListener: ValueEventListener? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -74,8 +79,15 @@ class ChatActivity : AppCompatActivity() {
         binding.enviarFAB.setOnClickListener {
             validarMensaje()
         }
+
+        binding.IbMasOpciones.setOnClickListener {
+            verMasOpciones() // Se dispara al tocar los tres puntos
+        }
+
         cargarInfo()
         cargarMensajes()
+        verificarBloqueo()
+        mensajeVisto()
     }
 
     private fun cargarMensajes() {
@@ -237,4 +249,115 @@ class ChatActivity : AppCompatActivity() {
                 ).show()
             }
     }
+
+    private fun mensajeVisto() {
+        referenceVisto = FirebaseDatabase.getInstance().getReference("Chats").child(chatRuta)
+        vistoListener = referenceVisto.addValueEventListener(object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                for (ds in snapshot.children) {
+                    val chat = ds.getValue(Chat::class.java)
+                    if (chat != null && chat.receptorUid == miUid && !chat.visto) {
+                        val hashMap = HashMap<String, Any>()
+                        hashMap["visto"] = true
+                        ds.ref.updateChildren(hashMap)
+                    }
+                }
+            }
+
+            override fun onCancelled(error: DatabaseError) {}
+        })
+    }
+
+    private fun verMasOpciones() {
+        val popupMenu = PopupMenu(this, binding.IbMasOpciones)
+        popupMenu.menu.add(0,0,0,if (yoBloqueado) "Desbloquear usuario" else "Bloquear usuario")
+
+        popupMenu.setOnMenuItemClickListener { item ->
+            if (item.itemId == 0) {
+                if (yoBloqueado) {
+                    desbloquearUsuario()
+                } else {
+                    bloquearUsuario()
+                }
+            }
+            true
+        }
+        popupMenu.show()
+    }
+
+    private fun bloquearUsuario(){
+        val ref = FirebaseDatabase.getInstance().getReference("Usuarios")
+        ref.child(miUid).child("Bloqueados").child(uid).setValue(true)
+            .addOnSuccessListener {
+                Toast.makeText(this, "Usuario bloqueado", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+    }
+
+    private fun desbloquearUsuario(){
+        val ref = FirebaseDatabase.getInstance().getReference("Usuarios")
+        ref.child(miUid).child("Bloqueados").child(uid).removeValue()
+            .addOnSuccessListener {
+                Toast.makeText(this, "Usuario desbloqueado", Toast.LENGTH_SHORT).show()
+            }
+            .addOnFailureListener { e ->
+                Toast.makeText(this, "Error: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+
+    }
+
+    private fun verificarBloqueo() {
+        val ref = FirebaseDatabase.getInstance().getReference("Usuarios")
+
+        // Verificar si YO bloqueé al usuario
+        ref.child(miUid).child("Bloqueados").child(uid)
+            .addValueEventListener(object : ValueEventListener{
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    yoBloqueado = snapshot.exists()
+                    actualizarUIBloqueo()
+                }
+
+                override fun onCancelled(error: DatabaseError) {}
+            })
+
+        // Verificar si el USUARIO me bloqueó a mí
+        ref.child(uid).child("Bloqueados").child(miUid)
+            .addValueEventListener(object : ValueEventListener{
+                override fun onDataChange(snapshot: DataSnapshot) {
+                    if (snapshot.exists()) {
+                        binding.EtMensajeChat.hint = "No puedes enviar mensajes a este usuario"
+                        binding.EtMensajeChat.isEnabled = false
+                        binding.enviarFAB.isEnabled = false
+                        binding.adjuntarFAB.isEnabled = false
+                    } else if (!yoBloqueado) {
+                        // Solo habilitar si yo tampoco lo tengo bloqueado
+                        binding.EtMensajeChat.hint = "Escribe un mensaje... "
+                        binding.EtMensajeChat.isEnabled = true
+                        binding.enviarFAB.isEnabled = true
+                        binding.adjuntarFAB.isEnabled = true
+                    }
+                }
+
+                override fun onCancelled(error: DatabaseError) {}
+            })
+
+    }
+
+    private fun actualizarUIBloqueo() {
+        if (yoBloqueado) {
+            binding.EtMensajeChat.hint = "Has bloqueado a este usuario"
+            binding.EtMensajeChat.isEnabled = false
+            binding.enviarFAB.isEnabled = false
+            binding.adjuntarFAB.isEnabled = false
+        } else {
+            // Se habilita solo si el otro no nos tiene bloqueado ( se maneja en verificarBloqueo)
+            binding.EtMensajeChat.hint = "Escribe un mensaje..."
+            binding.EtMensajeChat.isEnabled = true
+            binding.enviarFAB.isEnabled = true
+            binding.adjuntarFAB.isEnabled = true
+        }
+    }
+
 }

@@ -15,16 +15,19 @@ class Chat {
 
     var tiempo : Long = 0
 
+    var visto : Boolean = false
+
     // Constructor vacío
     constructor()
 
     // Constructor con todos los atributos
-    constructor(idMensaje: String, tipoMensaje: String, mensaje: String, emisorUid: String, receptorUid: String, tiempo: Long) {
+    constructor(idMensaje: String, tipoMensaje: String, mensaje: String, emisorUid: String, receptorUid: String, tiempo: Long, visto : Boolean) {
         this.idMensaje = idMensaje
         this.tipoMensaje = tipoMensaje
         this.mensaje = mensaje
         this.emisorUid = emisorUid
         this.receptorUid = receptorUid
         this.tiempo = tiempo
+        this.visto = visto
     }
 }
